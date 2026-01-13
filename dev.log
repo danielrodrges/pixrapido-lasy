@@ -1,0 +1,400 @@
+
+> template@0.1.0 dev
+> next dev --turbopack
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+⚠ Invalid next.config.ts options detected: 
+⚠     Unrecognized key(s) in object: 'eslint'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.13.173:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · optimizePackageImports
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+  The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+  	- include was updated to add '.next/dev/types/**/*.ts'
+
+  The following mandatory changes were made to your tsconfig.json:
+
+  	- jsx was set to react-jsx (next.js uses the React automatic runtime)
+
+✓ Ready in 6.4s
+ GET /api/webhook/kirvano 200 in 2.1s (compile: 2.1s, render: 44ms)
+✅ Supabase conectado com sucesso
+📨 Webhook Kirvano recebido: {
+  "event": "SALE_APPROVED",
+  "sale_id": "test_1768333453",
+  "customer": {
+    "name": "Teste Kirvano",
+    "email": "teste@teste.com",
+    "document": "12345678900"
+  },
+  "metadata": {
+    "sorteio_id": "prod_RaTp2WC2xaxsyj",
+    "quantidade": 3
+  }
+}
+✅ Pagamento aprovado - Iniciando processamento: {
+  saleId: 'test_1768333453',
+  cliente: 'Teste Kirvano',
+  email: 'teste@teste.com'
+}
+🎲 Criando novo pedido e gerando números...
+❌ Erro ao buscar sorteio: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+❌ Erro ao processar pagamento aprovado: Error: Sorteio prod_RaTp2WC2xaxsyj não encontrado
+    at processarPagamentoAprovado (src/app/api/webhook/kirvano/route.ts:150:15)
+    at async POST (src/app/api/webhook/kirvano/route.ts:62:9)
+  148 |       const sorteio = await obterSorteio(sorteioId);
+  149 |       if (!sorteio) {
+> 150 |         throw new Error(`Sorteio ${sorteioId} não encontrado`);
+      |               ^
+  151 |       }
+  152 |
+  153 |       // Determinar quantidade de números (padrão: 10)
+❌ Erro no webhook Kirvano: Error: Sorteio prod_RaTp2WC2xaxsyj não encontrado
+    at processarPagamentoAprovado (src/app/api/webhook/kirvano/route.ts:150:15)
+    at async POST (src/app/api/webhook/kirvano/route.ts:62:9)
+  148 |       const sorteio = await obterSorteio(sorteioId);
+  149 |       if (!sorteio) {
+> 150 |         throw new Error(`Sorteio ${sorteioId} não encontrado`);
+      |               ^
+  151 |       }
+  152 |
+  153 |       // Determinar quantidade de números (padrão: 10)
+ POST /api/webhook/kirvano 500 in 1053ms (compile: 8ms, render: 1045ms)
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+🎲 Criando sorteios de teste e real...
+
+📝 Criando sorteio: 🧪 SORTEIO TESTE - iPhone 15 Pro Max
+   ID: sorteio_teste_001
+   Números: 10000000 até 10004999 (5000 números)
+✅ Supabase conectado com sucesso
+✅ Sorteio sincronizado no Supabase: sorteio_teste_001
+   ✅ Sorteio criado com sucesso!
+📝 Criando sorteio: 🏆 MOTO HONDA CG 160 0KM + R$ 5.000
+   ID: sorteio_real_001
+   Números: 20000000 até 20004999 (5000 números)
+✅ Sorteio sincronizado no Supabase: sorteio_real_001
+   ✅ Sorteio criado com sucesso!
+🎉 Processo concluído!
+
+ GET /api/criar-sorteios?secret=criar123 200 in 667ms (compile: 237ms, render: 430ms)
+🎲 Criando sorteios de teste e real...
+
+📝 Criando sorteio: 🧪 SORTEIO TESTE - iPhone 15 Pro Max
+   ID: sorteio_teste_001
+   Números: 10000000 até 10004999 (5000 números)
+✅ Sorteio sincronizado no Supabase: sorteio_teste_001
+   ✅ Sorteio criado com sucesso!
+📝 Criando sorteio: 🏆 MOTO HONDA CG 160 0KM + R$ 5.000
+   ID: sorteio_real_001
+   Números: 20000000 até 20004999 (5000 números)
+✅ Sorteio sincronizado no Supabase: sorteio_real_001
+   ✅ Sorteio criado com sucesso!
+🎉 Processo concluído!
+
+ GET /api/criar-sorteios?secret=criar123 200 in 704ms (compile: 2ms, render: 702ms)
+📨 Webhook Kirvano recebido: {
+  "event": "SALE_APPROVED",
+  "sale_id": "test_local_1768333973",
+  "transaction_id": "txn_1768333973",
+  "amount": 1500,
+  "currency": "BRL",
+  "payment_method": "pix",
+  "customer": {
+    "name": "João Silva Teste",
+    "email": "joao.teste@email.com",
+    "phone_number": "+5511999887766",
+    "document": "12345678900"
+  },
+  "metadata": {
+    "sorteio_id": "sorteio_teste_001",
+    "quantidade": 3
+  },
+  "created_at": "2026-01-13T19:52:53Z"
+}
+✅ Pagamento aprovado - Iniciando processamento: {
+  saleId: 'test_local_1768333973',
+  cliente: 'João Silva Teste',
+  email: 'joao.teste@email.com'
+}
+🎲 Criando novo pedido e gerando números...
+✅ Usuário salvo no Supabase: 12345678900
+✅ Pedido salvo no Supabase: PED1768333974757523YAE3XO
+✅ 3 números reservados no Supabase: [ 10000722, 10001989, 10004464 ]
+✅ Números confirmados no Supabase: PED1768333974757523YAE3XO
+✅ Números vendidos atualizados: sorteio_teste_001 +3
+🎉 Novo pedido criado e processado: {
+  pedidoId: 'PED1768333974757523YAE3XO',
+  saleId: 'test_local_1768333973',
+  cliente: 'João Silva Teste',
+  email: 'joao.teste@email.com',
+  telefone: '+5511999887766',
+  quantidade: 3,
+  numeros: [ 10000722, 10001989, 10004464 ],
+  valorTotal: 15,
+  sorteio: '🧪 SORTEIO TESTE - iPhone 15 Pro Max'
+}
+ POST /api/webhook/kirvano 200 in 1831ms (compile: 20ms, render: 1812ms)
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+⨯ ./src/app/api/webhook/kirvano/route.ts:203:8
+Parsing ecmascript source code failed
+[0m [90m 201 |[39m         valorTotal[33m,[39m
+ [90m 202 |[39m         metodoPagamento[33m:[39m payment_method [33m||[39m [32m'pix'[39m[33m,[39m
+[31m[1m>[22m[39m[90m 203 |[39m       })[33m;[39m
+ [90m     |[39m        [31m[1m^[22m[39m
+ [90m 204 |[39m
+ [90m 205 |[39m       [90m// TODO: Integrar com ActiveCampaign futuramente[39m
+ [90m 206 |[39m       [90m// await integrarComActiveCampaign(nome, email, telefone, numerosGerados, sorteio.titulo);[39m[0m
+
+Expected a semicolon
+
+
+ POST /api/webhook/kirvano 500 in 2.5s (compile: 2.3s, render: 191ms)
+⨯ ./src/app/api/webhook/kirvano/route.ts:203:8
+Parsing ecmascript source code failed
+[0m [90m 201 |[39m         valorTotal[33m,[39m
+ [90m 202 |[39m         metodoPagamento[33m:[39m payment_method [33m||[39m [32m'pix'[39m[33m,[39m
+[31m[1m>[22m[39m[90m 203 |[39m       })[33m;[39m
+ [90m     |[39m        [31m[1m^[22m[39m
+ [90m 204 |[39m
+ [90m 205 |[39m       [90m// TODO: Integrar com ActiveCampaign futuramente[39m
+ [90m 206 |[39m       [90m// await integrarComActiveCampaign(nome, email, telefone, numerosGerados, sorteio.titulo);[39m[0m
+
+Expected a semicolon
+
+
+ POST /api/webhook/kirvano 500 in 21ms (compile: 12ms, render: 9ms)
+✅ Reservas expiradas limpas
+⨯ ./src/app/api/webhook/kirvano/route.ts:190:14
+Parsing ecmascript source code failed
+[0m [90m 188 |[39m         sorteioTitulo[33m:[39m sorteio[33m.[39mtitulo[33m,[39m
+ [90m 189 |[39m         numeros[33m:[39m numerosGerados[33m,[39m
+[31m[1m>[22m[39m[90m 190 |[39m       console[33m.[39mlog([32m'🎉 Novo pedido criado e processado:'[39m[33m,[39m {
+ [90m     |[39m              [31m[1m^[22m[39m
+ [90m 191 |[39m         pedidoId[33m,[39m
+ [90m 192 |[39m         saleId[33m:[39m sale_id[33m,[39m
+ [90m 193 |[39m         sorteioId[33m,[39m[0m
+
+Expected a semicolon
+
+
+ POST /api/webhook/kirvano 500 in 25ms (compile: 16ms, render: 9ms)
+📨 Webhook Kirvano recebido: {
+  "event": "SALE_APPROVED",
+  "sale_id": "D2RP8RQ7",
+  "customer": {
+    "name": "João da Silva",
+    "email": "exemplo@email.com",
+    "phone_number": "5511987654321",
+    "document": "12345678900"
+  },
+  "metadata": {
+    "sorteio_id": "sorteio_real_001",
+    "quantidade": 7
+  }
+}
+✅ Pagamento aprovado - Iniciando processamento: {
+  saleId: 'D2RP8RQ7',
+  cliente: 'João da Silva',
+  email: 'exemplo@email.com'
+}
+📋 Metadados processados: { sorteioId: 'sorteio_real_001', quantidadeSolicitada: 7 }
+✅ Supabase conectado com sucesso
+🎲 Criando novo pedido e gerando números...
+✅ Usuário salvo no Supabase: 12345678900
+✅ Pedido salvo no Supabase: PED1768334543312PLASGQ0QJ
+✅ 7 números reservados no Supabase: [
+  20000066, 20000146,
+  20000179, 20000426,
+  20000722, 20001883,
+  20004600
+]
+✅ Números confirmados no Supabase: PED1768334543312PLASGQ0QJ
+✅ Números vendidos atualizados: sorteio_real_001 +7
+🎉 Novo pedido criado e processado: {
+  pedidoId: 'PED1768334543312PLASGQ0QJ',
+  saleId: 'D2RP8RQ7',
+  sorteioId: 'sorteio_real_001',
+  sorteioTitulo: '🏆 MOTO HONDA CG 160 0KM + R$ 5.000',
+  cliente: 'João da Silva',
+  email: 'exemplo@email.com',
+  telefone: '5511987654321',
+  cpf: '12345678900',
+  quantidadeSolicitada: 7,
+  quantidadeGerada: 7,
+  numeros: [
+    20000066, 20000146,
+    20000179, 20000426,
+    20000722, 20001883,
+    20004600
+  ],
+  valorTotal: 70,
+  metodoPagamento: 'pix'
+}
+ POST /api/webhook/kirvano 200 in 2.6s (compile: 87ms, render: 2.5s)
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+  Reload env: .env.local
+  Reload env: .env.local
+  Reload env: .env.local
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+  Reload env: .env.local
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+  Reload env: .env.local
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+✅ Reservas expiradas limpas
+  Reload env: .env.local
+✅ Reservas expiradas limpas

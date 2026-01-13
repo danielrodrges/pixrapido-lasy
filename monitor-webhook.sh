@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "🔍 Monitorando logs do webhook Kirvano em tempo real..."
+echo "📍 Endpoint: http://localhost:3000/api/webhook/kirvano"
+echo "⏱️  Pressione Ctrl+C para parar"
+echo ""
+echo "=== Logs recentes ==="
+tail -n 50 dev.log 2>/dev/null | grep -i "webhook\|kirvano\|POST /api" || echo "Aguardando requisições..."
+echo ""
+echo "=== Monitoramento ao vivo ==="
+tail -f dev.log 2>/dev/null | grep --line-buffered -i "webhook\|kirvano\|POST\|📨\|✅\|❌"

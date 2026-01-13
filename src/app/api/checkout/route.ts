@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { salvarPedido, gerarIdPedido, reservarNumeros } from '@/lib/database';
 import { Pedido } from '@/lib/types';
-import { criarPixPagHiper } from '@/lib/paghiper';
+
+// ==================== CHECKOUT USANDO KIRVANO ====================
+// Fluxo: Frontend → Kirvano (direto) → Webhook → ActiveCampaign
+// Não precisa processar pagamento aqui, apenas reservar números
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sorteioId, sorteioTitulo, quantidade, valorTotal, cpf, nome, numeros, email } = body;
+    const { sorteioId, sorteioTitulo, quantidade, valorTotal, cpf, nome, numeros, email, telefone } = body;
 
     // Validações
     if (!sorteioId || !quantidade || !valorTotal || !cpf || !nome || !numeros) {
@@ -19,22 +22,12 @@ export async function POST(request: NextRequest) {
     // Gerar ID do pedido
     const pedidoId = gerarIdPedido();
     
-    // Reservar números no Supabase
+    // Reservar números no Supabase (status: reservado)
     await reservarNumeros(numeros, sorteioId, pedidoId, cpf);
     console.log(`📝 ${numeros.length} números reservados para pedido:`, pedidoId);
-    
-    // Criar PIX no PagHiper
-    const pixResponse = await criarPixPagHiper({
-      pedidoId,
-      nomeCliente: nome,
-      cpfCliente: cpf,
-      emailCliente: email,
-      valorTotal,
-      descricao: `${quantidade} número(s) - ${sorteioTitulo}`,
-      quantidade: 1,
-    });
 
-    // Salvar pedido no Supabase (status pendente)
+    // Salvar pedido no Supabase (status: pendente)
+    // O webhook da Kirvano vai atualizar para "pago" quando o pagamento for aprovado
     const pedido: Pedido = {
       id: pedidoId,
       sorteioId,
@@ -47,22 +40,31 @@ export async function POST(request: NextRequest) {
       metodoPagamento: 'pix',
       cpf,
       nome,
-      stripeSessionId: pixResponse.transaction_id, // Usar transaction_id do PagHiper
     };
     
     await salvarPedido(pedido);
-    console.log('✅ Pedido salvo:', pedidoId);
+    console.log('✅ Pedido salvo (pendente):', pedidoId);
 
-    // Retornar dados do PIX para o frontend
+    // Retornar dados para o frontend processar com Kirvano
     return NextResponse.json({ 
       success: true,
       pedidoId,
-      transactionId: pixResponse.transaction_id,
-      pixCode: pixResponse.pix_code.emv, // Copia e Cola
-      pixQrCodeUrl: pixResponse.pix_code.qrcode_image_url, // URL da imagem QR Code
-      pixQrCodeBase64: pixResponse.pix_code.qrcode_base64, // Base64 do QR Code
+      sorteioId,
+      quantidade,
       valorTotal,
       numeros,
+      cliente: {
+        nome,
+        email,
+        telefone,
+        cpf,
+      },
+      // Frontend deve enviar estes metadados para a Kirvano:
+      metadata: {
+        pedido_id: pedidoId,
+        sorteio_id: sorteioId,
+        quantidade,
+      }
     });
   } catch (error: any) {
     console.error('❌ Erro ao criar checkout:', error);
