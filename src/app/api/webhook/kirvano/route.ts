@@ -117,6 +117,32 @@ async function processarPagamentoAprovado(payload: KirvanoWebhookPayload) {
     const telefone = customer.phone_number || '';
     const cpf = customer.document || sale_id; // Usar sale_id como fallback se CPF não fornecido
 
+    // Extrair e validar metadados
+    const sorteioId = metadata?.sorteio_id;
+    let quantidade = 10; // valor padrão
+    
+    if (metadata?.quantidade) {
+      // Garantir que quantidade é um número válido
+      quantidade = typeof metadata.quantidade === 'number' 
+        ? metadata.quantidade 
+        : parseInt(String(metadata.quantidade));
+      
+      // Validar quantidade (mínimo 1, máximo 100)
+      if (isNaN(quantidade) || quantidade < 1) {
+        quantidade = 10;
+        console.warn('⚠️ Quantidade inválida, usando padrão: 10');
+      }
+      if (quantidade > 100) {
+        quantidade = 100;
+        console.warn('⚠️ Quantidade limitada ao máximo: 100');
+      }
+    }
+
+    console.log('📋 Metadados processados:', {
+      sorteioId,
+      quantidadeSolicitada: quantidade,
+    });
+
     // Verificar se já existe um pedido com este sale_id
     let pedidoId = metadata?.pedido_id || sale_id;
     let pedido = await obterPedidoPorId(pedidoId);
@@ -139,19 +165,15 @@ async function processarPagamentoAprovado(payload: KirvanoWebhookPayload) {
       // Novo pedido - gerar números automaticamente
       console.log('🎲 Criando novo pedido e gerando números...');
 
-      // Obter sorteio ativo (você pode ajustar a lógica conforme necessário)
-      const sorteioId = metadata?.sorteio_id;
+      // Validar sorteio_id
       if (!sorteioId) {
-        throw new Error('ID do sorteio não fornecido no metadata');
+        throw new Error('ID do sorteio não fornecido no metadata. Configure metadata.sorteio_id no pagamento da Kirvano.');
       }
 
       const sorteio = await obterSorteio(sorteioId);
       if (!sorteio) {
-        throw new Error(`Sorteio ${sorteioId} não encontrado`);
+        throw new Error(`Sorteio ${sorteioId} não encontrado. IDs válidos: sorteio_teste_001, sorteio_real_001`);
       }
-
-      // Determinar quantidade de números (padrão: 10)
-      const quantidade = metadata?.quantidade || 10;
 
       // Gerar números aleatórios únicos
       const numerosGerados = await gerarNumerosAleatoriosUnicos(quantidade, sorteioId);
@@ -189,17 +211,21 @@ async function processarPagamentoAprovado(payload: KirvanoWebhookPayload) {
       console.log('🎉 Novo pedido criado e processado:', {
         pedidoId,
         saleId: sale_id,
+        sorteioId,
+        sorteioTitulo: sorteio.titulo,
         cliente: nome,
         email,
         telefone,
-        quantidade,
+        cpf,
+        quantidadeSolicitada: quantidade,
+        quantidadeGerada: numerosGerados.length,
         numeros: numerosGerados,
         valorTotal,
-        sorteio: sorteio.titulo,
+        metodoPagamento: payment_method || 'pix',
       });
 
       // TODO: Integrar com ActiveCampaign futuramente
-      // await integrarComActiveCampaign(nome, email, telefone, numerosGerados);
+      // await integrarComActiveCampaign(nome, email, telefone, numerosGerados, sorteio.titulo);
     }
   } catch (error: any) {
     console.error('❌ Erro ao processar pagamento aprovado:', error);
@@ -208,22 +234,29 @@ async function processarPagamentoAprovado(payload: KirvanoWebhookPayload) {
 }
 
 async function processarPagamentoRecusado(payload: KirvanoWebhookPayload) {
-  const { sale_id, event, customer } = payload;
+  const { sale_id, event, customer, metadata } = payload;
+
+  // Extrair sorteio_id dos metadados se disponível
+  const sorteioId = metadata?.sorteio_id;
 
   console.log('❌ Pagamento recusado/cancelado:', {
     saleId: sale_id,
     event,
     cliente: customer.name,
+    sorteioId: sorteioId || 'não informado',
   });
 
   try {
     // Verificar se existe pedido associado
-    const pedidoId = payload.metadata?.pedido_id || sale_id;
+    const pedidoId = metadata?.pedido_id || sale_id;
     const pedido = await obterPedidoPorId(pedidoId);
 
     if (pedido) {
       await atualizarStatusPedido(pedidoId, 'cancelado');
-      console.log('📝 Status do pedido atualizado para cancelado:', pedidoId);
+      console.log('📝 Status do pedido atualizado para cancelado:', {
+        pedidoId,
+        sorteioId: pedido.sorteioId,
+      });
     } else {
       console.log('ℹ️ Nenhum pedido encontrado para cancelar:', sale_id);
     }
