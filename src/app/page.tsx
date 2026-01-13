@@ -17,27 +17,57 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import Header from '@/components/custom/Header';
-import { sorteiosAtivos, pacotesPadrao } from '@/lib/mock-data';
 import { Sorteio, Pacote } from '@/lib/types';
 import { formatarMoeda, calcularTempoRestante } from '@/lib/mock-data';
 
 export default function HomePage() {
+  const [sorteiosAtivos, setSorteiosAtivos] = useState<Sorteio[]>([]);
+  const [pacotesPadrao, setPacotesPadrao] = useState<Pacote[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [tempoRestante, setTempoRestante] = useState<any>({});
   const [pacotesSelecionados, setPacotesSelecionados] = useState<{[key: string]: Pacote}>({});
   const [processandoCheckout, setProcessandoCheckout] = useState<{[key: string]: boolean}>({});
 
+  // Buscar sorteios e pacotes da API (produtos do Stripe)
+  useEffect(() => {
+    async function carregarSorteios() {
+      try {
+        const response = await fetch('/api/sorteios');
+        const data = await response.json();
+        
+        if (data.sorteios) {
+          setSorteiosAtivos(data.sorteios);
+          console.log('✅ Sorteios carregados do Stripe:', data.sorteios.length);
+        }
+        
+        if (data.pacotes) {
+          setPacotesPadrao(data.pacotes);
+          console.log('✅ Pacotes carregados:', data.pacotes.length);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar sorteios:', error);
+      } finally {
+        setCarregando(false);
+      }
+    }
+    
+    carregarSorteios();
+  }, []);
+
   // Atualizar contadores a cada segundo
   useEffect(() => {
+    if (sorteiosAtivos.length === 0) return;
+    
     const interval = setInterval(() => {
       const novosTempos: any = {};
       sorteiosAtivos.forEach(sorteio => {
-        novosTempos[sorteio.id] = calcularTempoRestante(sorteio.datasorteio);
+        novosTempos[sorteio.id] = calcularTempoRestante(sorteio.dataSorteio);
       });
       setTempoRestante(novosTempos);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [sorteiosAtivos]);
 
   const calcularPorcentagemVendida = (sorteio: Sorteio) => {
     return Math.round((sorteio.numerosVendidos / sorteio.totalNumeros) * 100);
@@ -136,8 +166,19 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 max-w-6xl mx-auto">
-            {sorteiosAtivos.map((sorteio) => {
+          {carregando ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+              <p className="mt-4 text-gray-600">Carregando sorteios...</p>
+            </div>
+          ) : sorteiosAtivos.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">Nenhum sorteio ativo no momento.</p>
+              <p className="text-gray-500 text-sm mt-2">Em breve novos sorteios!</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 max-w-6xl mx-auto">
+              {sorteiosAtivos.map((sorteio) => {
               const porcentagem = calcularPorcentagemVendida(sorteio);
               const tempo = tempoRestante[sorteio.id] || { dias: 0, horas: 0, minutos: 0, segundos: 0 };
               const pacoteSelecionado = pacotesSelecionados[sorteio.id];
@@ -348,7 +389,8 @@ export default function HomePage() {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       </section>
 

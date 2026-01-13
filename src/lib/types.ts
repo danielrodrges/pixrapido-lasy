@@ -8,11 +8,18 @@ export interface Sorteio {
   valorPremio: number;
   precoPorNumero: number;
   totalNumeros: number;
+  numeroInicial: number;
+  numeroFinal: number;
   numerosVendidos: number;
-  datasorteio: Date;
+  dataSorteio: Date;
   status: 'ativo' | 'encerrado' | 'sorteado';
   destaque?: boolean;
   stripeProductId?: string;
+  numeroGanhador?: number;
+  cpfGanhador?: string;
+  dataRealizacao?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Pacote {
@@ -28,13 +35,17 @@ export interface Pedido {
   sorteioId: string;
   sorteioTitulo: string;
   numeros: number[];
+  quantidadeNumeros: number;
   valorTotal: number;
   dataPedido: Date;
+  dataPagamento?: Date;
   status: 'pendente' | 'pago' | 'cancelado';
   metodoPagamento: 'pix' | 'cartao';
   cpf: string;
   nome: string;
   stripeSessionId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Usuario {
@@ -42,13 +53,17 @@ export interface Usuario {
   nome: string;
   telefone?: string;
   email?: string;
+  dataCadastro?: Date;
 }
 
 export interface NumeroReservado {
+  id?: number;
   numero: number;
   sorteioId: string;
   pedidoId: string;
   cpf: string;
   dataReserva: Date;
+  dataConfirmacao?: Date;
   status: 'reservado' | 'confirmado';
+  createdAt?: Date;
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verificarNumeroDisponivel } from '@/lib/database';
 
 // API para verificar disponibilidade de números
 export async function POST(request: NextRequest) {
@@ -14,14 +15,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Em produção, verificar no banco de dados
-    // Por enquanto, considerar todos disponíveis
+    // Verificar disponibilidade real no database
     const disponibilidade = numeros.map(numero => ({
       numero,
-      disponivel: true
+      disponivel: verificarNumeroDisponivel(numero, sorteioId)
     }));
 
     const todosDisponiveis = disponibilidade.every(d => d.disponivel);
+    
+    console.log(`🔍 Verificados ${numeros.length} números - Todos disponíveis: ${todosDisponiveis}`);
 
     return NextResponse.json({ 
       disponibilidade,

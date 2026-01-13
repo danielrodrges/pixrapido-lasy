@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { salvarUsuario, obterUsuarioPorCpf } from '@/lib/database';
+import { Usuario } from '@/lib/types';
 
 // API para autenticação simples por CPF
 export async function POST(request: NextRequest) {
@@ -23,15 +25,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Em produção, salvar/atualizar no banco de dados
-    const usuario = {
+    // Salvar usuário no database
+    const usuario: Usuario = {
       cpf: cpfLimpo,
       nome,
-      telefone: telefone || null,
-      dataCadastro: new Date().toISOString(),
+      telefone: telefone || undefined,
+      dataCadastro: new Date(),
     };
 
-    console.log('👤 Usuário autenticado:', usuario);
+    salvarUsuario(usuario);
+    console.log('👤 Usuário autenticado e salvo:', usuario.cpf);
 
     return NextResponse.json({ 
       success: true,
@@ -65,12 +68,13 @@ export async function GET(request: NextRequest) {
 
     const cpfLimpo = cpf.replace(/\D/g, '');
 
-    // Em produção, buscar no banco de dados
-    console.log('🔍 Verificando usuário:', cpfLimpo);
+    // Buscar usuário no database
+    const usuario = obterUsuarioPorCpf(cpfLimpo);
+    console.log('🔍 Verificando usuário:', cpfLimpo, usuario ? 'encontrado' : 'não encontrado');
 
     return NextResponse.json({ 
-      existe: false,
-      usuario: null
+      existe: !!usuario,
+      usuario: usuario || null
     });
   } catch (error: any) {
     console.error('Erro ao verificar usuário:', error);

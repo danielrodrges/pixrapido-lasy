@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { salvarPedido, obterPedidosPorCpf, gerarIdPedido } from '@/lib/database';
+import { Pedido } from '@/lib/types';
 
 // API para criar/atualizar pedido
 export async function POST(request: NextRequest) {
@@ -23,24 +25,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Gerar ID único do pedido
-    const pedidoId = `PED${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const pedidoId = gerarIdPedido();
 
-    const pedido = {
+    const pedido: Pedido = {
       id: pedidoId,
       sorteioId,
       sorteioTitulo,
       numeros,
       valorTotal,
-      dataPedido: new Date().toISOString(),
+      dataPedido: new Date(),
       status: 'pendente',
-      metodoPagamento,
+      metodoPagamento: metodoPagamento as 'pix' | 'cartao',
       cpf,
       nome,
     };
 
-    // Em produção, salvar no banco de dados
-    // Por enquanto, retornar o pedido criado
-    console.log('📝 Pedido criado:', pedido);
+    // Salvar pedido no database
+    salvarPedido(pedido);
+    console.log('📝 Pedido criado e salvo:', pedidoId);
 
     return NextResponse.json({ 
       success: true,
@@ -68,12 +70,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Em produção, buscar do banco de dados
-    // Por enquanto, retornar array vazio
-    console.log('🔍 Buscando pedidos para CPF:', cpf);
+    // Buscar pedidos do database
+    const pedidos = obterPedidosPorCpf(cpf);
+    console.log(`🔍 ${pedidos.length} pedido(s) encontrado(s) para CPF:`, cpf);
 
     return NextResponse.json({ 
-      pedidos: [] 
+      pedidos
     });
   } catch (error: any) {
     console.error('Erro ao buscar pedidos:', error);

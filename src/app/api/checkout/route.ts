@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { salvarPedido, gerarIdPedido, reservarNumeros } from '@/lib/database';
+import { Pedido } from '@/lib/types';
+import { criarPixPagHiper } from '@/lib/paghiper';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sorteioId, sorteioTitulo, quantidade, valorTotal, cpf, nome, numeros } = body;
+    const { sorteioId, sorteioTitulo, quantidade, valorTotal, cpf, nome, numeros, email } = body;
 
     // Validações
     if (!sorteioId || !quantidade || !valorTotal || !cpf || !nome || !numeros) {
@@ -14,43 +16,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar sessão de checkout no Stripe
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'brl',
-            product_data: {
-              name: `${quantidade} número(s) - ${sorteioTitulo}`,
-              description: `Números: ${numeros.join(', ')}`,
-            },
-            unit_amount: Math.round(valorTotal * 100), // Stripe usa centavos
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/?sorteio=${sorteioId}`,
-      metadata: {
-        sorteioId,
-        sorteioTitulo,
-        quantidade: quantidade.toString(),
-        valorTotal: valorTotal.toString(),
-        cpf,
-        nome,
-        numeros: JSON.stringify(numeros),
-      },
+    // Gerar ID do pedido
+    const pedidoId = gerarIdPedido();
+    
+    // Reservar números no Supabase
+    await reservarNumeros(numeros, sorteioId, pedidoId, cpf);
+    console.log(`📝 ${numeros.length} números reservados para pedido:`, pedidoId);
+    
+    // Criar PIX no PagHiper
+    const pixResponse = await criarPixPagHiper({
+      pedidoId,
+      nomeCliente: nome,
+      cpfCliente: cpf,
+      emailCliente: email,
+      valorTotal,
+      descricao: `${quantidade} número(s) - ${sorteioTitulo}`,
+      quantidade: 1,
     });
 
+    // Salvar pedido no Supabase (status pendente)
+    const pedido: Pedido = {
+      id: pedidoId,
+      sorteioId,
+      sorteioTitulo,
+      numeros,
+      quantidadeNumeros: numeros.length,
+      valorTotal,
+      dataPedido: new Date(),
+      status: 'pendente',
+      metodoPagamento: 'pix',
+      cpf,
+      nome,
+      stripeSessionId: pixResponse.transaction_id, // Usar transaction_id do PagHiper
+    };
+    
+    await salvarPedido(pedido);
+    console.log('✅ Pedido salvo:', pedidoId);
+
+    // Retornar dados do PIX para o frontend
     return NextResponse.json({ 
-      sessionId: session.id, 
-      url: session.url,
-      pedidoId: `PED${Date.now()}` 
+      success: true,
+      pedidoId,
+      transactionId: pixResponse.transaction_id,
+      pixCode: pixResponse.pix_code.emv, // Copia e Cola
+      pixQrCodeUrl: pixResponse.pix_code.qrcode_image_url, // URL da imagem QR Code
+      pixQrCodeBase64: pixResponse.pix_code.qrcode_base64, // Base64 do QR Code
+      valorTotal,
+      numeros,
     });
   } catch (error: any) {
-    console.error('Erro ao criar checkout:', error);
+    console.error('❌ Erro ao criar checkout:', error);
     return NextResponse.json(
       { error: error.message || 'Erro ao processar pagamento' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { headers } from 'next/headers';
+import { atualizarStatusPedido, confirmarNumerosReservados, atualizarNumerosVendidos, salvarUsuario, reservarNumeros } from '@/lib/database';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -31,30 +32,43 @@ export async function POST(request: NextRequest) {
         // Extrair dados do metadata
         const metadata = session.metadata;
         
-        if (metadata) {
-          const pedidoData = {
-            id: `PED${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-            sorteioId: metadata.sorteioId,
-            sorteioTitulo: metadata.sorteioTitulo,
-            numeros: JSON.parse(metadata.numeros),
-            valorTotal: parseFloat(metadata.valorTotal),
-            dataPedido: new Date(),
-            status: 'pago' as const,
-            metodoPagamento: 'pix' as const,
-            cpf: metadata.cpf,
-            nome: metadata.nome,
-            stripeSessionId: session.id,
-          };
-
-          // Aqui você salvaria no banco de dados real
-          // Por enquanto, o frontend usa localStorage
-          console.log('✅ Pagamento confirmado:', pedidoData);
+        if (metadata && metadata.pedidoId) {
+          const pedidoId = metadata.pedidoId;
+          const sorteioId = metadata.sorteioId;
+          const cpf = metadata.cpf;
+          const nome = metadata.nome;
+          const numeros = JSON.parse(metadata.numeros || '[]');
           
-          // Em produção, você faria:
-          // - Salvar pedido no banco de dados
-          // - Confirmar números reservados
+          // 1. Salvar usuário no Supabase
+          await salvarUsuario({
+            cpf,
+            nome,
+            dataCadastro: new Date(),
+          });
+          
+          // 2. Reservar números no Supabase
+          await reservarNumeros(numeros, sorteioId, pedidoId, cpf);
+          
+          // 3. Atualizar status do pedido para "pago"
+          await atualizarStatusPedido(pedidoId, 'pago');
+          
+          // 4. Confirmar números reservados
+          await confirmarNumerosReservados(pedidoId);
+          
+          // 5. Atualizar contador de números vendidos
+          await atualizarNumerosVendidos(sorteioId, numeros.length);
+          
+          console.log('✅ Pagamento confirmado e processado:', {
+            pedidoId,
+            sessionId: session.id,
+            valor: metadata.valorTotal,
+            quantidade: numeros.length,
+            numeros: numeros
+          });
+          
+          // TODO: Em produção, adicionar:
           // - Enviar email/SMS de confirmação
-          // - Atualizar contadores de números vendidos
+          // - Notificar sistema de sorteio
         }
         break;
 
