@@ -323,3 +323,173 @@ INSERT INTO usuarios (cpf, nome, telefone, email)
 VALUES ('12345678900', 'Usuário Teste', '11999999999', 'teste@email.com')
 ON CONFLICT (cpf) DO NOTHING;
 ```
+
+---
+
+## 🔄 Queries para Webhook Kirvano
+
+### **1. Verificar pedidos processados pela Kirvano**
+```sql
+SELECT 
+  p.id,
+  p.stripe_session_id as sale_id_kirvano,
+  p.nome,
+  p.cpf,
+  p.sorteio_titulo,
+  p.quantidade_numeros,
+  p.valor_total,
+  p.status,
+  p.data_pagamento,
+  array_agg(n.numero ORDER BY n.numero) as numeros
+FROM pedidos p
+LEFT JOIN numeros_sorteio n ON p.id = n.pedido_id
+WHERE p.stripe_session_id IS NOT NULL
+GROUP BY p.id
+ORDER BY p.data_pagamento DESC
+LIMIT 50;
+```
+
+### **2. Buscar pedido por sale_id da Kirvano**
+```sql
+SELECT 
+  p.*,
+  array_agg(n.numero ORDER BY n.numero) as numeros
+FROM pedidos p
+LEFT JOIN numeros_sorteio n ON p.id = n.pedido_id
+WHERE p.stripe_session_id = 'abc123def456'  -- Substituir pelo sale_id
+GROUP BY p.id;
+```
+
+### **3. Listar vendas recentes (últimas 24h)**
+```sql
+SELECT 
+  p.id,
+  p.nome,
+  p.cpf,
+  p.sorteio_titulo,
+  p.quantidade_numeros,
+  p.valor_total,
+  p.status,
+  p.data_pagamento,
+  COUNT(n.numero) as numeros_confirmados
+FROM pedidos p
+LEFT JOIN numeros_sorteio n ON p.id = n.pedido_id AND n.status = 'confirmado'
+WHERE p.data_pagamento >= NOW() - INTERVAL '24 hours'
+AND p.status = 'pago'
+GROUP BY p.id
+ORDER BY p.data_pagamento DESC;
+```
+
+### **4. Verificar números duplicados (auditoria)**
+```sql
+SELECT 
+  numero,
+  sorteio_id,
+  COUNT(*) as quantidade,
+  array_agg(pedido_id) as pedidos_afetados
+FROM numeros_sorteio
+WHERE status = 'confirmado'
+GROUP BY numero, sorteio_id
+HAVING COUNT(*) > 1;
+```
+
+### **5. Estatísticas de webhook Kirvano**
+```sql
+-- Total de vendas por método
+SELECT 
+  metodo_pagamento,
+  COUNT(*) as total_pedidos,
+  SUM(valor_total) as faturamento,
+  AVG(valor_total) as ticket_medio,
+  SUM(quantidade_numeros) as total_numeros
+FROM pedidos
+WHERE status = 'pago'
+AND data_pagamento >= NOW() - INTERVAL '30 days'
+GROUP BY metodo_pagamento
+ORDER BY faturamento DESC;
+```
+
+### **6. Reprocessar pedido manualmente**
+```sql
+-- Confirmar números reservados de um pedido
+UPDATE numeros_sorteio
+SET status = 'confirmado'
+WHERE pedido_id = 'ped_XXXXX'
+AND status = 'reservado';
+
+-- Atualizar status do pedido
+UPDATE pedidos
+SET 
+  status = 'pago',
+  data_pagamento = NOW()
+WHERE id = 'ped_XXXXX';
+```
+
+### **7. Cancelar pedido e liberar números**
+```sql
+-- Remover números reservados
+DELETE FROM numeros_sorteio
+WHERE pedido_id = 'ped_XXXXX';
+
+-- Atualizar status do pedido
+UPDATE pedidos
+SET status = 'cancelado'
+WHERE id = 'ped_XXXXX';
+```
+
+### **8. Histórico completo de um cliente**
+```sql
+SELECT 
+  u.nome,
+  u.cpf,
+  u.email,
+  u.telefone,
+  p.id as pedido_id,
+  p.sorteio_titulo,
+  p.quantidade_numeros,
+  p.valor_total,
+  p.status,
+  p.data_pedido,
+  p.data_pagamento,
+  array_agg(n.numero ORDER BY n.numero) as numeros
+FROM usuarios u
+JOIN pedidos p ON u.cpf = p.cpf
+LEFT JOIN numeros_sorteio n ON p.id = n.pedido_id
+WHERE u.cpf = '12345678900'  -- Substituir pelo CPF
+GROUP BY u.nome, u.cpf, u.email, u.telefone, p.id
+ORDER BY p.data_pedido DESC;
+```
+
+### **9. Monitorar integridade dos dados**
+```sql
+-- Verificar pedidos sem números
+SELECT p.id, p.nome, p.quantidade_numeros, p.status
+FROM pedidos p
+LEFT JOIN numeros_sorteio n ON p.id = n.pedido_id
+WHERE p.status = 'pago'
+GROUP BY p.id
+HAVING COUNT(n.numero) = 0;
+
+-- Verificar números sem pedido
+SELECT n.numero, n.sorteio_id, n.pedido_id
+FROM numeros_sorteio n
+LEFT JOIN pedidos p ON n.pedido_id = p.id
+WHERE p.id IS NULL;
+```
+
+### **10. Dashboard de vendas em tempo real**
+```sql
+SELECT 
+  s.titulo as sorteio,
+  s.total_numeros,
+  s.numeros_vendidos,
+  ROUND((s.numeros_vendidos::numeric / s.total_numeros) * 100, 2) as percentual_vendido,
+  COUNT(DISTINCT p.id) as total_pedidos,
+  SUM(p.valor_total) as faturamento,
+  COUNT(DISTINCT p.cpf) as clientes_unicos
+FROM sorteios s
+LEFT JOIN pedidos p ON s.id = p.sorteio_id AND p.status = 'pago'
+WHERE s.status = 'ativo'
+GROUP BY s.id, s.titulo, s.total_numeros, s.numeros_vendidos
+ORDER BY faturamento DESC;
+```
