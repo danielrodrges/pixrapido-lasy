@@ -9,14 +9,13 @@ interface PagHiperPixRequest {
   payer_email: string;
   payer_name: string;
   payer_cpf_cnpj: string;
+  payer_phone?: string;
   days_due_date: string;
   notification_url?: string;
   discount_cents?: string;
   shipping_price_cents?: string;
   shipping_methods?: string;
   fixed_description?: boolean;
-  type_bank_slip?: string;
-  partners_id?: string;
   items: Array<{
     description: string;
     quantity: string;
@@ -25,17 +24,37 @@ interface PagHiperPixRequest {
   }>;
 }
 
-interface PagHiperPixResponse {
+// Resposta da API PagHiper (HTTP 201)
+interface PagHiperApiResponse {
   result: string;
   response_message: string;
+  create_request: {
+    transaction_id: string;
+    order_id: string;
+    created_date: string;
+    status: string;
+    due_date: string;
+    value_cents: string;
+    bank_slip: {
+      url_slip: string;
+      url_slip_pdf: string;
+      digitable_line: string;
+    };
+    pix_code: {
+      qrcode_base64: string;
+      qrcode_image_url: string;
+      emv: string;
+      bacen_url: string;
+      pix_url: string;
+    };
+  };
+}
+
+// Formato simplificado para uso interno
+interface PagHiperPixResponse {
   transaction_id: string;
   order_id: string;
-  created_date: string;
   status: string;
-  url_slip: string;
-  url_slip_pdf: string;
-  digitable_line: string;
-  bar_code_number_to_image: string;
   pix_code: {
     qrcode_base64: string;
     qrcode_image_url: string;
@@ -43,10 +62,9 @@ interface PagHiperPixResponse {
     bacen_url: string;
     pix_url: string;
   };
+  url_slip: string;
   due_date: string;
-  num_cart_selected: string;
   value_cents: string;
-  open_after_day_due: string;
 }
 
 /**
@@ -101,47 +119,77 @@ export async function criarPixPagHiper(params: {
     webhook: webhookUrl,
     apiKeyPresent: !!apiKey,
   });
-  console.log('📤 Dados da requisição:', JSON.stringify(requestData, null, 2));
 
   const response = await fetch(PAGHIPER_API_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=UTF-8',
       'Accept': 'application/json',
+      'Accept-Charset': 'UTF-8',
+      'Accept-Encoding': 'application/json',
     },
     body: JSON.stringify(requestData),
   });
 
   const responseText = await response.text();
   
-  if (!response.ok) {
-    console.error('❌ Erro PagHiper HTTP:', response.status);
+  console.log('📥 Status HTTP:', response.status);
+  console.log('📥 Resposta raw:', responseText);
+  
+  // HTTP 201 significa sucesso (seguindo exemplo PHP)
+  if (response.status !== 201) {
+    console.error('❌ Erro PagHiper - Status:', response.status);
     console.error('❌ Resposta:', responseText);
-    throw new Error(`Erro HTTP ${response.status}: ${responseText}`);
+    
+    try {
+      const errorData = JSON.parse(responseText);
+      throw new Error(errorData.response_message || `Erro HTTP ${response.status}`);
+    } catch {
+      throw new Error(`Erro HTTP ${response.status}: ${responseText}`);
+    }
   }
 
-  let data;
+  let apiResponse: PagHiperApiResponse;
   try {
-    data = JSON.parse(responseText);
+    apiResponse = JSON.parse(responseText);
   } catch (e) {
-    console.error('❌ Resposta não é JSON:', responseText);
+    console.error('❌ Resposta não é JSON válido:', responseText);
     throw new Error('Resposta inválida da API PagHiper');
   }
 
-  console.log('📥 Resposta PagHiper:', JSON.stringify(data, null, 2));
+  console.log('📥 Resposta PagHiper:', JSON.stringify(apiResponse, null, 2));
 
-  if (data.result !== 'success') {
-    console.error('❌ PagHiper retornou erro:', data);
-    throw new Error(data.response_message || 'Erro ao criar PIX no PagHiper');
+  // Verificar se teve sucesso
+  if (apiResponse.result !== 'success') {
+    console.error('❌ PagHiper retornou erro:', apiResponse);
+    throw new Error(apiResponse.response_message || 'Erro ao criar PIX no PagHiper');
   }
 
-  console.log('✅ PIX criado:', {
-    transactionId: data.transaction_id,
-    orderId: data.order_id,
-    status: data.status,
+  // Verificar se create_request existe
+  if (!apiResponse.create_request) {
+    console.error('❌ create_request não encontrado na resposta');
+    throw new Error('Resposta inválida: create_request não encontrado');
+  }
+
+  const createRequest = apiResponse.create_request;
+
+  console.log('✅ PIX criado com sucesso:', {
+    transactionId: createRequest.transaction_id,
+    orderId: createRequest.order_id,
+    status: createRequest.status,
+    valueCents: createRequest.value_cents,
   });
 
-  return data;
+  // Retornar formato simplificado
+  return {
+    transaction_id: createRequest.transaction_id,
+    order_id: createRequest.order_id,
+    status: createRequest.status,
+    pix_code: createRequest.pix_code,
+    url_slip: createRequest.bank_slip.url_slip,
+    due_date: createRequest.due_date,
+    value_cents: createRequest.value_cents,
+  };
 }
 
 /**
