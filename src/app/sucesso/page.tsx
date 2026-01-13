@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Home, User } from 'lucide-react';
 import Header from '@/components/custom/Header';
 
-export default function SucessoPage() {
+function SucessoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -128,5 +128,20 @@ export default function SucessoPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SucessoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-semibold">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <SucessoContent />
+    </Suspense>
   );
 }
