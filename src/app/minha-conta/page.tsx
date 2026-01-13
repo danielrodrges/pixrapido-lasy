@@ -15,7 +15,6 @@ import {
   Hash
 } from 'lucide-react';
 import Header from '@/components/custom/Header';
-import { pedidosMock } from '@/lib/mock-data';
 import { formatarCPF, formatarMoeda } from '@/lib/mock-data';
 import { Pedido } from '@/lib/types';
 
@@ -27,23 +26,51 @@ export default function MinhaContaPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se usuário está logado
-    const userCpf = localStorage.getItem('userCpf');
-    const userName = localStorage.getItem('userName');
+    async function carregarDados() {
+      const userCpf = localStorage.getItem('userCpf');
+      const userName = localStorage.getItem('userName');
 
-    if (!userCpf) {
-      router.push('/login?redirect=/minha-conta');
-      return;
+      if (!userCpf) {
+        router.push('/login?redirect=/minha-conta');
+        return;
+      }
+
+      try {
+        // Validar se usuário ainda existe no banco
+        const authResponse = await fetch(`/api/auth?cpf=${userCpf}`);
+        const authData = await authResponse.json();
+        
+        if (!authData.existe) {
+          localStorage.clear();
+          router.push('/login?redirect=/minha-conta');
+          return;
+        }
+
+        setCpf(userCpf);
+        setNome(authData.usuario?.nome || userName || 'Usuário');
+        
+        // Carregar pedidos REAIS do Supabase
+        const pedidosResponse = await fetch(`/api/pedidos?cpf=${userCpf}`);
+        const pedidosData = await pedidosResponse.json();
+        
+        if (pedidosData.success && pedidosData.pedidos) {
+          const pedidosOrdenados = pedidosData.pedidos.sort((a: Pedido, b: Pedido) => 
+            new Date(b.dataPedido).getTime() - new Date(a.dataPedido).getTime()
+          );
+          setPedidos(pedidosOrdenados);
+        } else {
+          setPedidos([]);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        setPedidos([]);
+        setLoading(false);
+      }
     }
 
-    setCpf(userCpf);
-    setNome(userName || 'Usuário');
-    
-    // Carregar pedidos (mockados)
-    setTimeout(() => {
-      setPedidos(pedidosMock);
-      setLoading(false);
-    }, 500);
+    carregarDados();
   }, [router]);
 
   const handleLogout = () => {
