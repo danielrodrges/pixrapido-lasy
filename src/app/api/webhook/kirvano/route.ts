@@ -11,6 +11,7 @@ import {
   obterSorteio
 } from '@/lib/database';
 import { Pedido } from '@/lib/types';
+import { enviarParaActiveCampaign, isActiveCampaignConfigurado } from '@/lib/activecampaign';
 
 // Webhook da Kirvano para processar notificações de pagamento
 // Documentação: https://docs.kirvano.com/webhooks
@@ -224,8 +225,25 @@ async function processarPagamentoAprovado(payload: KirvanoWebhookPayload) {
         metodoPagamento: payment_method || 'pix',
       });
 
-      // TODO: Integrar com ActiveCampaign futuramente
-      // await integrarComActiveCampaign(nome, email, telefone, numerosGerados, sorteio.titulo);
+      // Integrar com ActiveCampaign (opcional)
+      if (isActiveCampaignConfigurado()) {
+        try {
+          await enviarParaActiveCampaign({
+            email,
+            nome,
+            telefone,
+            numerosGerados,
+            pedidoId,
+            sorteioId,
+            valorPago: valorTotal,
+          });
+        } catch (error) {
+          // Não falhar o webhook por erro no ActiveCampaign
+          console.error('⚠️ Erro ao enviar para ActiveCampaign (pedido foi salvo com sucesso):', error);
+        }
+      } else {
+        console.log('ℹ️ ActiveCampaign não configurado - notificação não enviada');
+      }
     }
   } catch (error: any) {
     console.error('❌ Erro ao processar pagamento aprovado:', error);
