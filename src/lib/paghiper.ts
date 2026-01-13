@@ -64,13 +64,16 @@ export async function criarPixPagHiper(params: {
   const apiKey = process.env.PAGHIPER_API_KEY;
 
   if (!apiKey) {
-    throw new Error('PAGHIPER_API_KEY não configurada no .env.local');
+    console.error('❌ PAGHIPER_API_KEY não encontrada');
+    throw new Error('PAGHIPER_API_KEY não configurada');
   }
 
   const valorEmCentavos = Math.round(params.valorTotal * 100);
   
-  // Obter URL pública do Codespace
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3002';
+  // Obter URL pública - Vercel fornece VERCEL_URL automaticamente
+  const baseUrl = process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_URL || 'http://localhost:3002';
   const webhookUrl = `${baseUrl}/api/webhook/paghiper`;
 
   const requestData: PagHiperPixRequest = {
@@ -96,6 +99,7 @@ export async function criarPixPagHiper(params: {
     valor: params.valorTotal,
     valorCentavos: valorEmCentavos,
     webhook: webhookUrl,
+    apiKeyPresent: !!apiKey,
   });
   console.log('📤 Dados da requisição:', JSON.stringify(requestData, null, 2));
 
