@@ -51,8 +51,8 @@ export interface Pedido {
 export interface Usuario {
   cpf: string;
   nome: string;
-  telefone?: string;
-  email?: string;
+  telefone: string;
+  email: string;
   dataCadastro?: Date;
 }
 

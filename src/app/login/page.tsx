@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [cpf, setCpf] = useState('');
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [email, setEmail] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -35,22 +36,62 @@ export default function LoginPage() {
     return tel.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar CPF
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+      alert('CPF deve ter 11 dígitos');
+      return;
+    }
+    
+    if (!isLogin) {
+      // Validar email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alert('Email inválido');
+        return;
+      }
+      
+      // Validar telefone
+      const telefoneLimpo = telefone.replace(/\D/g, '');
+      if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+        alert('Telefone inválido');
+        return;
+      }
+    }
+    
     setLoading(true);
 
-    // Simular autenticação
-    setTimeout(() => {
-      // Salvar CPF no localStorage (simulação)
-      localStorage.setItem('userCpf', cpf);
-      if (!isLogin) {
-        localStorage.setItem('userName', nome);
-        localStorage.setItem('userPhone', telefone);
+    try {
+      // Chamar API real
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          cpf: cpfLimpo, 
+          nome: isLogin ? 'Usuario' : nome, 
+          telefone: isLogin ? '' : telefone,
+          email: isLogin ? `${cpfLimpo}@temp.com` : email
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro na autenticação');
       }
+
+      // Salvar no localStorage
+      localStorage.setItem('userCpf', cpfLimpo);
+      localStorage.setItem('userName', data.usuario.nome);
+      localStorage.setItem('userPhone', data.usuario.telefone);
+      localStorage.setItem('userEmail', data.usuario.email);
       
       setLoading(false);
       
-      // Redirecionar para checkout ou conta
+      // Redirecionar
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
       
@@ -59,7 +100,10 @@ export default function LoginPage() {
       } else {
         router.push('/minha-conta');
       }
-    }, 1500);
+    } catch (error: any) {
+      alert(error.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -148,6 +192,20 @@ export default function LoginPage() {
                     placeholder="(00) 00000-0000"
                     required
                     className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:outline-none text-base sm:text-lg font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    required
+                    className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:outline-none text-base sm:text-lg"
                   />
                 </div>
               </>
