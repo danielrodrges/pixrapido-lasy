@@ -88,12 +88,12 @@ function CheckoutContent() {
     }
 
     const userName = localStorage.getItem('userName') || 'Comprador';
+    const userPhone = localStorage.getItem('userPhone') || '';
 
     setLoading(true);
 
     try {
-      // NOVO FLUXO: Backend apenas reserva números
-      // Pagamento será processado via Kirvano SDK (ainda não integrado no frontend)
+      // Chamar API para gerar PIX
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
@@ -108,28 +108,25 @@ function CheckoutContent() {
           nome: userName,
           numeros,
           email: `${cpf}@pixrapido.com.br`,
-          telefone: localStorage.getItem('userPhone') || '',
+          telefone: userPhone,
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        // TODO: Integrar Kirvano SDK no frontend
-        // Por enquanto, redirecionar para página de sucesso ou mostrar mensagem
-        alert(`Pedido criado! ID: ${data.pedidoId}\n\nIntegração Kirvano em desenvolvimento.\nMetadados para Kirvano:\n${JSON.stringify(data.metadata, null, 2)}`);
-        
-        // Salvar dados para futura integração
-        sessionStorage.setItem('pendingCheckout', JSON.stringify(data));
-        
-        // Redirecionar para home por enquanto
-        router.push('/');
+      if (data.success && data.pixCode) {
+        // Mostrar QR Code PIX
+        setPixData({
+          pixCode: data.pixCode,
+          pixQrCodeUrl: data.pixQrCodeUrl,
+          pedidoId: data.pedidoId,
+        });
       } else {
-        throw new Error(data.error || 'Erro ao criar pedido');
+        throw new Error(data.error || 'Erro ao gerar PIX');
       }
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error);
-      alert(`Erro ao processar pagamento: ${error.message}\n\nIntegração com Kirvano deve ser feita no frontend.`);
+      alert('Erro ao processar pagamento. Tente novamente.');
     } finally {
       setLoading(false);
     }

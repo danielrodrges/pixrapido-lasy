@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { salvarPedido, gerarIdPedido, reservarNumeros } from '@/lib/database';
 import { Pedido } from '@/lib/types';
 
-// ==================== CHECKOUT USANDO KIRVANO ====================
-// Fluxo: Frontend → Kirvano (direto) → Webhook → ActiveCampaign
-// Não precisa processar pagamento aqui, apenas reservar números
+// ==================== CHECKOUT COM PIX SIMPLES ====================
+// Gera PIX mock para testes ou usa Stripe PIX
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
     console.log(`📝 ${numeros.length} números reservados para pedido:`, pedidoId);
 
     // Salvar pedido no Supabase (status: pendente)
-    // O webhook da Kirvano vai atualizar para "pago" quando o pagamento for aprovado
     const pedido: Pedido = {
       id: pedidoId,
       sorteioId,
@@ -45,26 +43,21 @@ export async function POST(request: NextRequest) {
     await salvarPedido(pedido);
     console.log('✅ Pedido salvo (pendente):', pedidoId);
 
-    // Retornar dados para o frontend processar com Kirvano
+    // Gerar PIX Code mock para desenvolvimento
+    // Em produção, integrar com gateway de pagamento real
+    const pixCodeMock = `00020126580014br.gov.bcb.pix0136${pedidoId}@pixrapido.com52040000530398654${valorTotal.toFixed(2)}5802BR5913PixRapido6009SAO PAULO62070503***6304${Math.random().toString(36).substring(7).toUpperCase()}`;
+    
+    const pixQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCodeMock)}`;
+
+    // Retornar dados do PIX
     return NextResponse.json({ 
       success: true,
       pedidoId,
-      sorteioId,
-      quantidade,
+      pixCode: pixCodeMock,
+      pixQrCodeUrl,
       valorTotal,
       numeros,
-      cliente: {
-        nome,
-        email,
-        telefone,
-        cpf,
-      },
-      // Frontend deve enviar estes metadados para a Kirvano:
-      metadata: {
-        pedido_id: pedidoId,
-        sorteio_id: sorteioId,
-        quantidade,
-      }
+      mensagem: 'PIX gerado! Em produção, será integrado com gateway real.',
     });
   } catch (error: any) {
     console.error('❌ Erro ao criar checkout:', error);

@@ -61,7 +61,11 @@ export default function HomePage() {
     const interval = setInterval(() => {
       const novosTempos: any = {};
       sorteiosAtivos.forEach(sorteio => {
-        novosTempos[sorteio.id] = calcularTempoRestante(sorteio.dataSorteio);
+        // Converter string para Date se necessário
+        const dataSorteio = typeof sorteio.dataSorteio === 'string' 
+          ? new Date(sorteio.dataSorteio) 
+          : sorteio.dataSorteio;
+        novosTempos[sorteio.id] = calcularTempoRestante(dataSorteio);
       });
       setTempoRestante(novosTempos);
     }, 1000);
