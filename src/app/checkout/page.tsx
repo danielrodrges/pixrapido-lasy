@@ -92,7 +92,8 @@ function CheckoutContent() {
     setLoading(true);
 
     try {
-      // Chamar API do PagHiper para gerar PIX
+      // NOVO FLUXO: Backend apenas reserva números
+      // Pagamento será processado via Kirvano SDK (ainda não integrado no frontend)
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
@@ -107,24 +108,28 @@ function CheckoutContent() {
           nome: userName,
           numeros,
           email: `${cpf}@pixrapido.com.br`,
+          telefone: localStorage.getItem('userPhone') || '',
         }),
       });
 
       const data = await response.json();
 
-      if (data.success && data.pixCode) {
-        // Mostrar QR Code PIX
-        setPixData({
-          pixCode: data.pixCode,
-          pixQrCodeUrl: data.pixQrCodeUrl,
-          pedidoId: data.pedidoId,
-        });
+      if (data.success) {
+        // TODO: Integrar Kirvano SDK no frontend
+        // Por enquanto, redirecionar para página de sucesso ou mostrar mensagem
+        alert(`Pedido criado! ID: ${data.pedidoId}\n\nIntegração Kirvano em desenvolvimento.\nMetadados para Kirvano:\n${JSON.stringify(data.metadata, null, 2)}`);
+        
+        // Salvar dados para futura integração
+        sessionStorage.setItem('pendingCheckout', JSON.stringify(data));
+        
+        // Redirecionar para home por enquanto
+        router.push('/');
       } else {
-        throw new Error(data.error || 'Erro ao gerar PIX');
+        throw new Error(data.error || 'Erro ao criar pedido');
       }
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error);
-      alert('Erro ao processar pagamento. Tente novamente.');
+      alert(`Erro ao processar pagamento: ${error.message}\n\nIntegração com Kirvano deve ser feita no frontend.`);
     } finally {
       setLoading(false);
     }
